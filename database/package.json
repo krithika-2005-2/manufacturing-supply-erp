@@ -1,0 +1,22 @@
+{
+  "name": "erp-database",
+  "version": "1.0.0",
+  "description": "Database layer for Manufacturing & Supply ERP",
+  "private": true,
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.20.0"
+  }
+}

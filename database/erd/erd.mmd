@@ -1,0 +1,136 @@
+erDiagram
+    USERS ||--o{ ENQUIRIES : "created_by"
+    USERS ||--o{ QUOTATIONS : "created_by"
+    USERS ||--o{ SALES_ORDERS : "created_by"
+    USERS ||--o{ DISPATCHES : "created_by"
+
+    CUSTOMERS ||--o{ ENQUIRIES : "has"
+    CUSTOMERS ||--o{ QUOTATIONS : "has"
+    CUSTOMERS ||--o{ SALES_ORDERS : "has"
+
+    ENQUIRIES ||--|{ ENQUIRY_ITEMS : "contains"
+    PRODUCTS  ||--o{ ENQUIRY_ITEMS : "referenced by"
+
+    ENQUIRIES ||--o{ QUOTATIONS : "quoted as"
+    QUOTATIONS ||--|{ QUOTATION_ITEMS : "contains"
+    PRODUCTS   ||--o{ QUOTATION_ITEMS : "referenced by"
+
+    QUOTATIONS ||--o| SALES_ORDERS : "converted to (max 1)"
+    SALES_ORDERS ||--|{ SALES_ORDER_ITEMS : "contains"
+    PRODUCTS     ||--o{ SALES_ORDER_ITEMS : "referenced by"
+
+    SALES_ORDERS ||--o{ DISPATCHES : "fulfilled by"
+    DISPATCHES   ||--|{ DISPATCH_ITEMS : "contains"
+    PRODUCTS     ||--o{ DISPATCH_ITEMS : "referenced by"
+
+    PRODUCTS ||--|| INVENTORY : "stock tracked in"
+
+    USERS {
+        uuid id PK
+        text full_name
+        text email UK
+        text password_hash
+        enum role
+        boolean is_active
+    }
+
+    CUSTOMERS {
+        uuid id PK
+        text company_name
+        text contact_person
+        text mobile UK
+        text email
+        text city
+    }
+
+    PRODUCTS {
+        uuid id PK
+        text product_code UK
+        text product_name
+        text category
+        text unit
+        numeric base_price
+    }
+
+    INVENTORY {
+        uuid id PK
+        uuid product_id FK "UNIQUE"
+        int physical_quantity
+        int reserved_quantity
+    }
+
+    ENQUIRIES {
+        uuid id PK
+        text enquiry_number UK
+        uuid customer_id FK
+        date enquiry_date
+        date required_date
+        enum status
+        uuid created_by FK
+    }
+
+    ENQUIRY_ITEMS {
+        uuid id PK
+        uuid enquiry_id FK
+        uuid product_id FK
+        int quantity
+    }
+
+    QUOTATIONS {
+        uuid id PK
+        text quotation_number UK
+        uuid enquiry_id FK
+        uuid customer_id FK
+        date valid_until
+        enum status
+        numeric grand_total
+        uuid created_by FK
+    }
+
+    QUOTATION_ITEMS {
+        uuid id PK
+        uuid quotation_id FK
+        uuid product_id FK
+        int quantity
+        numeric unit_price
+        numeric discount_percentage
+        numeric gst_percentage
+        numeric line_amount
+    }
+
+    SALES_ORDERS {
+        uuid id PK
+        text order_number UK
+        uuid quotation_id FK "UNIQUE"
+        uuid customer_id FK
+        date order_date
+        numeric total_amount
+        enum status
+        uuid created_by FK
+    }
+
+    SALES_ORDER_ITEMS {
+        uuid id PK
+        uuid sales_order_id FK
+        uuid product_id FK
+        int quantity
+        numeric unit_price
+        numeric line_amount
+    }
+
+    DISPATCHES {
+        uuid id PK
+        text dispatch_number UK
+        uuid sales_order_id FK
+        date dispatch_date
+        text vehicle_number
+        text driver_name
+        uuid created_by FK
+    }
+
+    DISPATCH_ITEMS {
+        uuid id PK
+        uuid dispatch_id FK
+        uuid product_id FK
+        int quantity
+    }
