@@ -1,0 +1,243 @@
+// Prisma contract for the existing PostgreSQL ERP database.
+// Table and column names use snake_case @@map aliases so they can be aligned
+// with the live schema (adjust @@map / @map values after prisma db pull).
+// This backend does not provision a separate database; it only connects via DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES_USER
+}
+
+enum EnquiryStatus {
+  NEW
+  QUOTED
+  WON
+  LOST
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+enum SalesOrderStatus {
+  PENDING
+  CONFIRMED
+  DISPATCHED
+  CANCELLED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  username      String   @unique
+  passwordHash  String   @map("password_hash")
+  role          Role
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  enquiries     Enquiry[]
+  quotations    Quotation[]
+  salesOrders   SalesOrder[]
+  dispatches    Dispatch[]
+
+  @@map("users")
+}
+
+model Customer {
+  id            String   @id @default(uuid())
+  companyName   String   @map("company_name")
+  contactPerson String   @map("contact_person")
+  mobile        String
+  email         String
+  city          String
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  enquiries   Enquiry[]
+  quotations  Quotation[]
+  salesOrders SalesOrder[]
+
+  @@map("customers")
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  product_code String   @unique
+  product_name String
+  category     String?
+  base_price   Decimal? @db.Decimal(18, 4)
+  unit      String   @default("PCS")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  inventory       Inventory?
+  enquiryItems    EnquiryItem[]
+  quotationItems  QuotationItem[]
+  salesOrderItems SalesOrderItem[]
+  dispatchItems   DispatchItem[]
+
+  @@map("products")
+}
+
+model Inventory {
+  id                 String  @id @default(uuid())
+  productId          String  @unique @map("product_id")
+  product            Product @relation(fields: [productId], references: [id])
+  physicalQuantity   Decimal @default(0) @map("physical_quantity") @db.Decimal(18, 4)
+  reservedQuantity   Decimal @default(0) @map("reserved_quantity") @db.Decimal(18, 4)
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("inventory")
+}
+
+model DocumentSequence {
+  key        String @id
+  lastNumber Int    @default(0) @map("last_number")
+
+  @@map("document_sequences")
+}
+
+model Enquiry {
+  id            String         @id @default(uuid())
+  enquiryNumber String         @unique @map("enquiry_number")
+  customerId    String         @map("customer_id")
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  enquiryDate   DateTime       @map("enquiry_date") @db.Date
+  requiredDate  DateTime       @map("required_date") @db.Date
+  notes         String?
+  status        EnquiryStatus  @default(NEW)
+  createdById   String         @map("created_by_id")
+  createdBy     User           @relation(fields: [createdById], references: [id])
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  items       EnquiryItem[]
+  quotations  Quotation[]
+
+  @@map("enquiries")
+}
+
+model EnquiryItem {
+  id         String  @id @default(uuid())
+  enquiryId  String  @map("enquiry_id")
+  enquiry    Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  productId  String  @map("product_id")
+  product    Product @relation(fields: [productId], references: [id])
+  quantity   Decimal @db.Decimal(18, 4)
+  notes      String?
+
+  @@map("enquiry_items")
+}
+
+model Quotation {
+  id               String          @id @default(uuid())
+  quotationNumber  String          @unique @map("quotation_number")
+  enquiryId        String          @map("enquiry_id")
+  enquiry          Enquiry         @relation(fields: [enquiryId], references: [id])
+  customerId       String          @map("customer_id")
+  customer         Customer        @relation(fields: [customerId], references: [id])
+  status           QuotationStatus @default(DRAFT)
+  grandTotal       Decimal         @map("grand_total") @db.Decimal(18, 2)
+  notes            String?
+  createdById      String          @map("created_by_id")
+  createdBy        User            @relation(fields: [createdById], references: [id])
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  items      QuotationItem[]
+  salesOrder SalesOrder?
+
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id               String    @id @default(uuid())
+  quotationId      String    @map("quotation_id")
+  quotation        Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId        String    @map("product_id")
+  product          Product   @relation(fields: [productId], references: [id])
+  quantity         Decimal   @db.Decimal(18, 4)
+  unitPrice        Decimal   @map("unit_price") @db.Decimal(18, 4)
+  discountPercent  Decimal   @map("discount_percent") @db.Decimal(5, 2)
+  gstPercent       Decimal   @map("gst_percent") @db.Decimal(5, 2)
+  baseAmount       Decimal   @map("base_amount") @db.Decimal(18, 2)
+  discountAmount   Decimal   @map("discount_amount") @db.Decimal(18, 2)
+  gstAmount        Decimal   @map("gst_amount") @db.Decimal(18, 2)
+  lineTotal        Decimal   @map("line_total") @db.Decimal(18, 2)
+
+  @@map("quotation_items")
+}
+
+model SalesOrder {
+  id              String           @id @default(uuid())
+  orderNumber     String           @unique @map("order_number")
+  quotationId     String           @unique @map("quotation_id")
+  quotation       Quotation        @relation(fields: [quotationId], references: [id])
+  customerId      String           @map("customer_id")
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  status          SalesOrderStatus @default(PENDING)
+  grandTotal      Decimal          @map("grand_total") @db.Decimal(18, 2)
+  createdById     String           @map("created_by_id")
+  createdBy       User             @relation(fields: [createdById], references: [id])
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  items           SalesOrderItem[]
+  dispatch        Dispatch?
+
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id           String     @id @default(uuid())
+  salesOrderId String     @map("sales_order_id")
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId    String     @map("product_id")
+  product      Product    @relation(fields: [productId], references: [id])
+  quantity     Decimal    @db.Decimal(18, 4)
+  unitPrice    Decimal    @map("unit_price") @db.Decimal(18, 4)
+  lineTotal    Decimal    @map("line_total") @db.Decimal(18, 2)
+
+  @@map("sales_order_items")
+}
+
+model Dispatch {
+  id             String     @id @default(uuid())
+  dispatchNumber String     @unique @map("dispatch_number")
+  salesOrderId   String     @unique @map("sales_order_id")
+  salesOrder     SalesOrder @relation(fields: [salesOrderId], references: [id])
+  dispatchDate   DateTime   @map("dispatch_date") @db.Date
+  vehicleNumber  String     @map("vehicle_number")
+  driverName     String     @map("driver_name")
+  createdById    String     @map("created_by_id")
+  createdBy      User       @relation(fields: [createdById], references: [id])
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  items DispatchItem[]
+
+  @@map("dispatches")
+}
+
+model DispatchItem {
+  id         String   @id @default(uuid())
+  dispatchId String   @map("dispatch_id")
+  dispatch   Dispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Decimal  @db.Decimal(18, 4)
+
+  @@map("dispatch_items")
+}

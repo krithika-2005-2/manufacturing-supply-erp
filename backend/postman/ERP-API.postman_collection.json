@@ -1,0 +1,238 @@
+{
+  "info": {
+    "name": "Manufacturing Supply ERP API",
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "description": "Enquiry → Quotation → Sales Order → Inventory Reservation → Dispatch",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "enquiryId", "value": "" },
+    { "key": "quotationId", "value": "" },
+    { "key": "salesOrderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@erp.local\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login Sales User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"sales\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme Manufacturing\",\n  \"contactPerson\": \"Ravi Kumar\",\n  \"mobile\": \"9876543210\",\n  \"email\": \"ravi@acme.test\",\n  \"city\": \"Pune\"\n}"
+            },
+            "url": "{{baseUrl}}/customers"
+          }
+        },
+        {
+          "name": "List Customers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/customers"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products & Inventory",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"BOLT-M8\",\n  \"name\": \"Hex Bolt M8\",\n  \"unit\": \"PCS\",\n  \"physicalQuantity\": 100\n}"
+            },
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "Get Inventory",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/inventory"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enquiries",
+      "item": [
+        {
+          "name": "Create Enquiry",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"enquiryDate\": \"2026-09-16\",\n  \"requiredDate\": \"2026-09-30\",\n  \"notes\": \"Urgent fabrication\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 60 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/enquiries"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quotations",
+      "item": [
+        {
+          "name": "Create Quotation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 60,\n      \"unitPrice\": 150,\n      \"discountPercent\": 5,\n      \"gstPercent\": 18\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/quotations"
+          }
+        },
+        {
+          "name": "Accept Quotation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SENT\"\n}"
+            },
+            "url": "{{baseUrl}}/quotations/{{quotationId}}/status"
+          }
+        },
+        {
+          "name": "Convert Quotation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/quotations/{{quotationId}}/convert"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales Orders & Dispatch",
+      "item": [
+        {
+          "name": "Confirm Sales Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/sales-orders/{{salesOrderId}}/confirm"
+          }
+        },
+        {
+          "name": "Dispatch Sales Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dispatchDate\": \"2026-09-20\",\n  \"vehicleNumber\": \"MH12AB1234\",\n  \"driverName\": \"Suresh Patil\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 60 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/sales-orders/{{salesOrderId}}/dispatch"
+          }
+        }
+      ]
+    }
+  ]
+}
